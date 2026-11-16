@@ -19,8 +19,7 @@ pipeline {
                 echo 'Deploying....'
 
                 withCredentials([sshUserPrivateKey(credentialsId: 'ubuntu-staging-server', keyFileVariable: 'SSH_KEY', usernameVariable: 'USERNAME')]) {
-                  echo SSH_KEY
-                  echo USERNAME
+                  sh 'cd ~/workspace/jenkins-training && git pull'
                 }
             }
         }
