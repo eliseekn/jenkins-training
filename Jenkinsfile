@@ -1,27 +1,14 @@
-pipeline {
-    agent any
+def remote = [:]
+remote.name = 'Staging Server'
+remote.allowAnyHosts = true
 
-    stages {
-        stage('Build') {
-            steps {
-                echo 'Building..'
-            }
-        }
-
-        stage('Test') {
-            steps {
-                echo 'Testing..'
-            }
-        }
-
-        stage('Deploy to staging') {
-            steps {
-                echo 'Deploying....'
-
-                withCredentials([sshUserPrivateKey(credentialsId: 'ubuntu-staging-server', keyFileVariable: 'SSH_KEY', usernameVariable: 'USERNAME')]) {
-                  sh 'cd ~/workspace/jenkins-training && git pull'
-                }
-            }
-        }
+node {
+  withCredentials([string(credentialsId: 'ubuntu-staging-server-username', variable: 'STAGING_USERNAME'), string(credentialsId: 'ubuntu-staging-server-host', variable: 'STAGING_HOST'), string(credentialsId: 'ubuntu-staging-server-password', variable: 'STAGING_PASSWORD')]) {
+    remote.host = STAGING_HOST
+    remote.user = STAGING_USERNAME
+    remote.password = STAGING_PASSWORD
+    stage('Deploy to staging') {
+      sshCommand remote: remote, command: 'cd ~/workspace/jenkins-training && git pull'
     }
+  }
 }
