@@ -14,7 +14,7 @@ pipeline {
   stages {
     stage('Test') {
       steps {
-        echo 'Runing tests suites...'
+        echo 'Runing tests...'
       }
     }
 
@@ -30,14 +30,7 @@ pipeline {
             usernameVariable: 'SSH_USER'
           )
         ]) {
-          sh '''
-            ssh -i "$SSH_KEY" \
-              -o BatchMode=yes \
-              -o StrictHostKeyChecking=yes \
-              -o UserKnownHostsFile="$KNOWN_HOSTS" \
-              "$SSH_USER@$STAGING_HOST" \
-              "cd $APP_DIR && git pull"
-          '''
+          sh 'ssh -i "$SSH_KEY" -o BatchMode=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile="$KNOWN_HOSTS" "$SSH_USER@$STAGING_HOST" "cd $APP_DIR && git pull"'
         }
       }
     }
