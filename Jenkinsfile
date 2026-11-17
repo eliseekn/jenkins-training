@@ -1,14 +1,54 @@
-def remote = [:]
-remote.name = 'Staging Server'
-remote.allowAnyHosts = true
+pipeline {
+  agent any
 
-node {
-  withCredentials([string(credentialsId: 'ubuntu-staging-server-username', variable: 'STAGING_USERNAME'), string(credentialsId: 'ubuntu-staging-server-host', variable: 'STAGING_HOST'), string(credentialsId: 'ubuntu-staging-server-password', variable: 'STAGING_PASSWORD')]) {
-    remote.host = STAGING_HOST
-    remote.user = STAGING_USERNAME
-    remote.password = STAGING_PASSWORD
+  options {
+    timeout(time: 10, unit: 'MINUTES')
+    disableConcurrentBuilds()
+  }
+
+  environment {
+    APP_DIR = '~/workspace/jenkins-training'
+    KNOWN_HOSTS = '/var/lib/jenkins/.ssh/known_hosts'
+  }
+
+  stages {
+    stage('Test') {
+      steps {
+        echo 'Runing tests suites...'
+      }
+    }
+
     stage('Deploy to staging') {
-      sshCommand remote: remote, command: 'cd ~/workspace/jenkins-training && git pull'
+      when { branch 'develop' }
+
+      steps {
+        withCredentials([
+          string(credentialsId: 'ubuntu-staging-server-host', variable: 'STAGING_HOST'),
+          sshUserPrivateKey(
+            credentialsId: 'staging-ssh-key',
+            keyFileVariable: 'SSH_KEY',
+            usernameVariable: 'SSH_USER'
+          )
+        ]) {
+          sh '''
+            ssh -i "$SSH_KEY" \
+              -o BatchMode=yes \
+              -o StrictHostKeyChecking=yes \
+              -o UserKnownHostsFile="$KNOWN_HOSTS" \
+              "$SSH_USER@$STAGING_HOST" \
+              "cd $APP_DIR && git pull"
+          '''
+        }
+      }
+    }
+  }
+
+  post {
+    success {
+      echo 'Deploy to staging succeeded'
+    }
+    failure {
+      echo 'Deploy failed'
     }
   }
 }
